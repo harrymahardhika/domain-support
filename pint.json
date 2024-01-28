@@ -1,0 +1,50 @@
+{
+  "preset": "laravel",
+  "rules": {
+    "class_attributes_separation": {
+      "elements": {
+        "const": "none",
+        "property": "one"
+      }
+    },
+    "declare_strict_types": true,
+    "no_superfluous_phpdoc_tags": true,
+    "no_extra_blank_lines": {
+      "tokens": [
+        "attribute",
+        "break",
+        "case",
+        "continue",
+        "curly_brace_block",
+        "default",
+        "extra",
+        "parenthesis_brace_block",
+        "return",
+        "square_brace_block",
+        "switch",
+        "throw",
+        "use",
+        "use_trait"
+      ]
+    },
+    "ordered_traits": true,
+    "phpdoc_align": {
+      "align": "vertical",
+      "tags": [
+        "method",
+        "param",
+        "property-read",
+        "property-write",
+        "property",
+        "return",
+        "throws",
+        "type",
+        "var"
+      ]
+    },
+    "phpdoc_order": {
+      "order": ["method", "mixin", "property", "property-read", "param", "throws", "return"]
+    },
+    "yoda_style": true
+  }
+}
