@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
 
 abstract class AbstractRepository
 {
-    public const SORT_DIRECTION_ASC = 'asc';
-    public const SORT_DIRECTION_DESC = 'desc';
+    public const string SORT_DIRECTION_ASC = 'asc';
+    public const string SORT_DIRECTION_DESC = 'desc';
 
     protected string $model;
 
@@ -40,7 +40,7 @@ abstract class AbstractRepository
     private function makeQuery(): void
     {
         /** @var Model $model */
-        $model = new $this->model();
+        $model = new $this->model;
 
         $query = $model->query();
 
