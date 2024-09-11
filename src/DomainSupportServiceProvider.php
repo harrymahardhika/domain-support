@@ -13,12 +13,6 @@ class DomainSupportServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'harrym');
-        // $this->loadViewsFrom(__DIR__.'/../resources/views', 'harrym');
-        // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        // $this->loadRoutesFrom(__DIR__.'/routes.php');
-
-        // Publishing is only necessary when using the CLI.
         if ($this->app->runningInConsole()) {
             $this->bootForConsole();
         }
@@ -31,7 +25,6 @@ class DomainSupportServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/domain-support.php', 'domain-support');
 
-        // Register the service the package provides.
         $this->app->singleton('domain-support', function ($app) {
             return new DomainSupport;
         });
@@ -56,23 +49,5 @@ class DomainSupportServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/domain-support.php' => config_path('domain-support.php'),
         ], 'domain-support.config');
-
-        // Publishing the views.
-        /*$this->publishes([
-            __DIR__.'/../resources/views' => base_path('resources/views/vendor/harrym'),
-        ], 'domain-support.views');*/
-
-        // Publishing assets.
-        /*$this->publishes([
-            __DIR__.'/../resources/assets' => public_path('vendor/harrym'),
-        ], 'domain-support.assets');*/
-
-        // Publishing the translation files.
-        /*$this->publishes([
-            __DIR__.'/../resources/lang' => resource_path('lang/vendor/harrym'),
-        ], 'domain-support.lang');*/
-
-        // Registering package commands.
-        // $this->commands([]);
     }
 }

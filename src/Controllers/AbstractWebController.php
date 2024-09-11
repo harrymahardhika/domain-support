@@ -6,6 +6,4 @@ namespace HarryM\DomainSupport\Controllers;
 
 use Illuminate\Routing\Controller;
 
-abstract class AbstractWebController extends Controller
-{
-}
+abstract class AbstractWebController extends Controller {}
