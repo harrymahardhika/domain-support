@@ -12,25 +12,30 @@ use Illuminate\Support\Str;
 
 abstract class AbstractRepository
 {
-    public const string SORT_DIRECTION_ASC = 'asc';
-    public const string SORT_DIRECTION_DESC = 'desc';
+    public const SORT_ORDER_ASC = 'asc';
+    public const SORT_ORDER_DESC = 'desc';
 
     protected string $model;
 
     /** @var Builder<Model> */
     protected Builder $query;
 
-    protected string $defaultSort = 'created_at';
+    protected string $sortColumn = 'created_at';
 
-    protected string $defaultSortDirection = self::SORT_DIRECTION_DESC;
+    protected string $sortOrder = self::SORT_ORDER_DESC;
+
+    protected ?int $limit = null;
+
+    protected ?int $perPage = null;
+
+    /** @var array<string>|null */
+    protected ?array $sortableColumns = [];
 
     /** @var array<string>|null */
     protected ?array $searchableColumns = [];
 
     /** @var array<string>|null */
     protected ?array $with = [];
-
-    protected ?int $limit = null;
 
     public function __construct(protected ?CriteriaInterface $criteria = null)
     {
@@ -74,22 +79,37 @@ abstract class AbstractRepository
         return $this;
     }
 
-    /**
-     * @param  array<string,string>|null                         $appends
-     * @return LengthAwarePaginator<Model>|Collection<int,Model>
-     */
-    public function paginate(?array $appends = null): LengthAwarePaginator|Collection
+    public function sortColumn(string $column): static
     {
-        $appends = $appends ?? [];
+        if ($this->sortableColumns && in_array($column, $this->sortableColumns, true)) {
+            $this->sortColumn = $column;
+        }
 
-        $this->orderBy();
+        return $this;
+    }
 
-        return $this->query->paginate()->appends($appends);
+    public function sortOrder(string $order): static
+    {
+        $this->sortOrder = $order;
+
+        return $this;
+    }
+
+    public function perPage(int $perPage): static
+    {
+        $this->perPage = $perPage;
+
+        return $this;
+    }
+
+    public function limit(int $limit): void
+    {
+        $this->limit = $limit;
     }
 
     protected function orderBy(): static
     {
-        $this->query->orderBy($this->defaultSort, $this->defaultSortDirection);
+        $this->query->orderBy($this->sortColumn, $this->sortOrder);
 
         return $this;
     }
@@ -108,8 +128,16 @@ abstract class AbstractRepository
         return $this->query->get();
     }
 
-    public function limit(int $limit): void
+    /**
+     * @param  array<string,string>|null                         $appends
+     * @return LengthAwarePaginator<Model>|Collection<int,Model>
+     */
+    public function paginate(?array $appends = null): LengthAwarePaginator|Collection
     {
-        $this->limit = $limit;
+        $appends = $appends ?? [];
+
+        $this->orderBy();
+
+        return $this->query->paginate($this->perPage)->appends($appends);
     }
 }

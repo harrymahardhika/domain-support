@@ -1,55 +1,55 @@
 {
-    "name": "harrym/domain-support",
-    "description": ":package_description",
-    "license": "MIT",
-    "version": "0.1.0",
-    "authors": [
-        {
-            "name": "Harry Mahardhika",
-            "email": "harry@infinitidea.com",
-            "homepage": "https://harrymahardhika.com"
-        }
-    ],
-    "homepage": "https://github.com/harrym/domain-support",
-    "keywords": [
-        "Laravel",
-        "DomainSupport"
-    ],
-    "require": {
-        "php": "^8.3",
-        "spatie/laravel-data": "^4.0"
-    },
-    "require-dev": {
-        "roave/security-advisories": "dev-latest",
-        "phpunit/phpunit": "^11.0",
-        "orchestra/testbench": "^9.0",
-        "pestphp/pest": "^3.0",
-        "laravel/pint": "^1.13",
-        "larastan/larastan": "^2.8"
-    },
-    "autoload": {
-        "psr-4": {
-            "HarryM\\DomainSupport\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "HarryM\\DomainSupport\\Tests\\": "tests"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "HarryM\\DomainSupport\\DomainSupportServiceProvider"
-            ],
-            "aliases": {
-                "DomainSupport": "HarryM\\DomainSupport\\Facades\\DomainSupport"
-            }
-        }
-    },
-    "config": {
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+  "name": "harrym/domain-support",
+  "description": ":package_description",
+  "license": "MIT",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Harry Mahardhika",
+      "email": "harry@infinitidea.com",
+      "homepage": "https://harrymahardhika.com"
     }
+  ],
+  "homepage": "https://github.com/harrym/domain-support",
+  "keywords": [
+    "Laravel",
+    "DomainSupport"
+  ],
+  "require": {
+    "php": "^8.2",
+    "spatie/laravel-data": "^3.0"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest",
+    "phpunit/phpunit": "^11.0",
+    "orchestra/testbench": "^9.0",
+    "pestphp/pest": "^3.0",
+    "laravel/pint": "^1.13",
+    "larastan/larastan": "^2.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "HarryM\\DomainSupport\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "HarryM\\DomainSupport\\Tests\\": "tests"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "HarryM\\DomainSupport\\DomainSupportServiceProvider"
+      ],
+      "aliases": {
+        "DomainSupport": "HarryM\\DomainSupport\\Facades\\DomainSupport"
+      }
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
 }
