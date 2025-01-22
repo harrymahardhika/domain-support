@@ -10,11 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Config;
 
-/**
- * @template TFactory of Factory
- */
 abstract class AbstractModel extends Model
 {
+    /** @use HasFactory<Factory>*/
     use HasFactory;
     use SoftDeletes;
 
@@ -24,11 +22,8 @@ abstract class AbstractModel extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->perPage = Config::get('domain-support.per_page');
+        $this->perPage = (int) Config::get('domain-support.per_page');
     }
 
-    /**
-     * @return TFactory|null
-     */
     abstract protected static function newFactory(): mixed;
 }
