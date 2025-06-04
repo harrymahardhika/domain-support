@@ -2,6 +2,7 @@
   "name": "harrym/domain-support",
   "description": "Laravel Domain Support",
   "license": "MIT",
+  "type": "library",
   "authors": [
     {
       "name": "Harry Mahardhika",
@@ -24,7 +25,9 @@
     "orchestra/testbench": "^9.0",
     "pestphp/pest": "^3.0",
     "laravel/pint": "^1.13",
-    "larastan/larastan": "^2.8"
+    "larastan/larastan": "^2.8",
+    "rector/rector": "^1.2",
+    "driftingly/rector-laravel": "^1.2"
   },
   "autoload": {
     "psr-4": {

@@ -25,9 +25,7 @@ class DomainSupportServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/domain-support.php', 'domain-support');
 
-        $this->app->singleton('domain-support', function ($app) {
-            return new DomainSupport;
-        });
+        $this->app->singleton('domain-support', fn ($app): DomainSupport => new DomainSupport);
     }
 
     /**

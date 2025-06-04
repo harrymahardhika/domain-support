@@ -14,6 +14,6 @@ class JsonResponseException extends Exception
     {
         $code = (array_key_exists($this->getCode(), Response::$statusTexts)) ? $this->getCode() : 500;
 
-        return response()->json(['message' => $this->getMessage()], $code);
+        return new JsonResponse(['message' => $this->getMessage()], $code);
     }
 }

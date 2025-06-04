@@ -49,9 +49,9 @@ abstract class AbstractRepository
 
         $query = $model->query();
 
-        $this->query = ! empty($this->with) ? $query->with($this->with) : $query;
+        $this->query = null === $this->with || [] === $this->with ? $query : $query->with($this->with);
 
-        if ($this->criteria) {
+        if ($this->criteria instanceof CriteriaInterface) {
             foreach ($this->criteria->toArray() as $key => $value) {
                 $key = Str::camel($key);
                 if ($value) {
@@ -63,17 +63,18 @@ abstract class AbstractRepository
 
     public function search(string $keyword): static
     {
-        if (! empty($this->searchableColumns)) {
+        if (null !== $this->searchableColumns && [] !== $this->searchableColumns) {
             $keyword = sprintf('%%%s%%', $keyword);
 
             /** @var array<string> $searchableColumns */
             $searchableColumns = $this->searchableColumns;
 
-            $this->query = $this->query->where(function ($query) use ($searchableColumns, $keyword) {
-                foreach ($searchableColumns as $column) {
-                    $query->orWhere($column, 'ilike', $keyword);
-                }
-            });
+            $this->query = $this->query
+                ->where(function (\Illuminate\Contracts\Database\Query\Builder $query) use ($searchableColumns, $keyword): void {
+                    foreach ($searchableColumns as $column) {
+                        $query->orWhere($column, 'ilike', $keyword);
+                    }
+                });
         }
 
         return $this;
@@ -134,7 +135,7 @@ abstract class AbstractRepository
      */
     public function paginate(?array $appends = null): LengthAwarePaginator|Collection
     {
-        $appends = $appends ?? [];
+        $appends ??= [];
 
         $this->orderBy();
 
