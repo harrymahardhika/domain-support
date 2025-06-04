@@ -8,14 +8,14 @@ use Illuminate\Support\Collection;
 
 trait EnumTrait
 {
-    public static function fromName(string $name)
+    public static function fromName(string $name): mixed
     {
-        return constant("static::$name");
+        return constant('static::'.$name);
     }
 
     public static function list(): Collection
     {
-        return collect(self::cases())->map(static fn ($case) => [
+        return collect(self::cases())->map(static fn ($case): array => [
             'name' => $case->name,
             'value' => $case->value,
             'label' => $case->translated(),

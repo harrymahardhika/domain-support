@@ -10,6 +10,6 @@ trait SendsJsonResponse
 {
     public function sendJsonResponse(mixed $content, int $code = 200): JsonResponse
     {
-        return response()->json($content, $code);
+        return new JsonResponse($content, $code);
     }
 }

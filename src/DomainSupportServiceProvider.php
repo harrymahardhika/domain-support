@@ -21,13 +21,12 @@ class DomainSupportServiceProvider extends ServiceProvider
     /**
      * Register any package services.
      */
+    #[\Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/domain-support.php', 'domain-support');
 
-        $this->app->singleton('domain-support', function ($app) {
-            return new DomainSupport;
-        });
+        $this->app->singleton('domain-support', fn ($app): DomainSupport => new DomainSupport);
     }
 
     /**
@@ -35,6 +34,7 @@ class DomainSupportServiceProvider extends ServiceProvider
      *
      * @return array<int,string>
      */
+    #[\Override]
     public function provides(): array
     {
         return ['domain-support'];

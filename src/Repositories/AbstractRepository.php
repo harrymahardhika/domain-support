@@ -12,8 +12,9 @@ use Illuminate\Support\Str;
 
 abstract class AbstractRepository
 {
-    public const SORT_ORDER_ASC = 'asc';
-    public const SORT_ORDER_DESC = 'desc';
+    public const string SORT_ORDER_ASC = 'asc';
+
+    public const string SORT_ORDER_DESC = 'desc';
 
     protected string $model;
 
@@ -42,34 +43,15 @@ abstract class AbstractRepository
         $this->makeQuery();
     }
 
-    private function makeQuery(): void
-    {
-        /** @var Model $model */
-        $model = new $this->model;
-
-        $query = $model->query();
-
-        $this->query = ! empty($this->with) ? $query->with($this->with) : $query;
-
-        if ($this->criteria) {
-            foreach ($this->criteria->toArray() as $key => $value) {
-                $key = Str::camel($key);
-                if ($value) {
-                    $this->$key($value);
-                }
-            }
-        }
-    }
-
     public function search(string $keyword): static
     {
-        if (! empty($this->searchableColumns)) {
+        if (null !== $this->searchableColumns && [] !== $this->searchableColumns) {
             $keyword = sprintf('%%%s%%', $keyword);
 
             /** @var array<string> $searchableColumns */
             $searchableColumns = $this->searchableColumns;
 
-            $this->query = $this->query->where(function ($query) use ($searchableColumns, $keyword) {
+            $this->query = $this->query->where(function (\Illuminate\Contracts\Database\Query\Builder $query) use ($searchableColumns, $keyword): void {
                 foreach ($searchableColumns as $column) {
                     $query->orWhere($column, 'ilike', $keyword);
                 }
@@ -107,13 +89,6 @@ abstract class AbstractRepository
         $this->limit = $limit;
     }
 
-    protected function orderBy(): static
-    {
-        $this->query->orderBy($this->sortColumn, $this->sortOrder);
-
-        return $this;
-    }
-
     /**
      * @return Collection<int,Model>
      */
@@ -134,10 +109,36 @@ abstract class AbstractRepository
      */
     public function paginate(?array $appends = null): LengthAwarePaginator|Collection
     {
-        $appends = $appends ?? [];
+        $appends ??= [];
 
         $this->orderBy();
 
         return $this->query->paginate($this->perPage)->appends($appends);
+    }
+
+    protected function orderBy(): static
+    {
+        $this->query->orderBy($this->sortColumn, $this->sortOrder);
+
+        return $this;
+    }
+
+    private function makeQuery(): void
+    {
+        /** @var Model $model */
+        $model = new $this->model;
+
+        $query = $model->query();
+
+        $this->query = null === $this->with || [] === $this->with ? $query : $query->with($this->with);
+
+        if ($this->criteria instanceof CriteriaInterface) {
+            foreach ($this->criteria->toArray() as $key => $value) {
+                $key = Str::camel($key);
+                if ($value) {
+                    $this->$key($value);
+                }
+            }
+        }
     }
 }
