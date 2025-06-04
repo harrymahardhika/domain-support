@@ -1,8 +1,7 @@
 {
   "name": "harrym/domain-support",
-  "description": ":package_description",
+  "description": "Laravel Domain Support",
   "license": "MIT",
-  "version": "0.4.0",
   "authors": [
     {
       "name": "Harry Mahardhika",
@@ -45,11 +44,16 @@
       "aliases": {
         "DomainSupport": "HarryM\\DomainSupport\\Facades\\DomainSupport"
       }
+    },
+    "branch-alias": {
+      "dev-1.x": "dev-1.x"
     }
   },
   "config": {
     "allow-plugins": {
       "pestphp/pest-plugin": true
     }
-  }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
