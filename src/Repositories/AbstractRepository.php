@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HarryM\DomainSupport\Repositories;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -48,14 +49,26 @@ abstract class AbstractRepository
         if (null !== $this->searchableColumns && [] !== $this->searchableColumns) {
             $keyword = sprintf('%%%s%%', $keyword);
 
+            /** @var Connection $connection */
+            $connection = $this->query->getConnection();
+            $databaseDriver = $connection->getDriverName();
+
             /** @var array<string> $searchableColumns */
             $searchableColumns = $this->searchableColumns;
 
-            $this->query = $this->query->where(function (\Illuminate\Contracts\Database\Query\Builder $query) use ($searchableColumns, $keyword): void {
-                foreach ($searchableColumns as $column) {
-                    $query->orWhere($column, 'ilike', $keyword);
-                }
-            });
+            if ('pgsql' === $databaseDriver) {
+                $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
+                    foreach ($searchableColumns as $column) {
+                        $query->orWhere($column, 'ilike', $keyword);
+                    }
+                });
+            } else {
+                $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
+                    foreach ($searchableColumns as $column) {
+                        $query->orWhereRaw(sprintf('LOWER(%s) LIKE ?', $column), [mb_strtolower($keyword)]);
+                    }
+                });
+            }
         }
 
         return $this;

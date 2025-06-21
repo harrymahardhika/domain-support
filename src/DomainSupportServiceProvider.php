@@ -26,7 +26,7 @@ class DomainSupportServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/domain-support.php', 'domain-support');
 
-        $this->app->singleton('domain-support', fn ($app): DomainSupport => new DomainSupport);
+        $this->app->singleton('domain-support', fn (): DomainSupport => new DomainSupport);
     }
 
     /**
@@ -45,7 +45,6 @@ class DomainSupportServiceProvider extends ServiceProvider
      */
     protected function bootForConsole(): void
     {
-        // Publishing the configuration file.
         $this->publishes([
             __DIR__.'/../config/domain-support.php' => config_path('domain-support.php'),
         ], 'domain-support.config');

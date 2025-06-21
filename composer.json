@@ -21,7 +21,7 @@
   "require-dev": {
     "roave/security-advisories": "dev-latest",
     "phpunit/phpunit": "^11.0",
-    "orchestra/testbench": "^9.0",
+    "orchestra/testbench": "^9.14",
     "pestphp/pest": "^3.0",
     "laravel/pint": "^1.13",
     "larastan/larastan": "^2.8",
