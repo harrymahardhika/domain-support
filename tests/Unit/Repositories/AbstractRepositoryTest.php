@@ -324,3 +324,91 @@ describe('Return types', function (): void {
         expect($results)->toBeInstanceOf(LengthAwarePaginator::class);
     });
 });
+
+describe('New features', function (): void {
+    it('limit method maintains fluent interface', function (): void {
+        $repository = new TestRepository();
+
+        $result = $repository->limit(2);
+
+        expect($result)->toBeInstanceOf(TestRepository::class);
+    });
+
+    it('sortOrder validates and normalizes input', function (): void {
+        $repository = new TestRepository();
+
+        $repository->sortOrder('ASC');
+
+        $results = $repository->get();
+        expect($results)->toHaveCount(3);
+
+        $repository2 = new TestRepository();
+        $repository2->sortOrder('DESC');
+
+        $results2 = $repository2->get();
+        expect($results2)->toHaveCount(3);
+
+        // Invalid order should be ignored
+        $repository3 = new TestRepository();
+        $repository3->sortOrder('invalid');
+
+        $results3 = $repository3->get();
+        expect($results3)->toHaveCount(3);
+    });
+
+    it('handles empty string search gracefully', function (): void {
+        $repository = new TestRepository();
+
+        $results = $repository->search('')->get();
+
+        expect($results)->toHaveCount(3);
+    });
+
+    it('handles whitespace-only search gracefully', function (): void {
+        $repository = new TestRepository();
+
+        $results = $repository->search('   ')->get();
+
+        expect($results)->toHaveCount(3);
+    });
+
+    it('reset method creates fresh query', function (): void {
+        $repository = new TestRepository();
+
+        // Apply some filters
+        $repository->search('john')->sortColumn('name')->limit(1);
+        $firstResults = $repository->get();
+        expect($firstResults)->toHaveCount(1);
+
+        // Reset and get all
+        $repository->reset();
+        $allResults = $repository->get();
+        expect($allResults)->toHaveCount(3);
+    });
+
+    it('withScout method can enable scout', function (): void {
+        $repository = new TestRepository();
+
+        $result = $repository->withScout(true);
+
+        expect($result)->toBeInstanceOf(TestRepository::class);
+    });
+
+    it('withScout method can disable scout', function (): void {
+        $repository = new TestRepository();
+
+        $result = $repository->withScout(false);
+
+        expect($result)->toBeInstanceOf(TestRepository::class);
+    });
+
+    it('scout is disabled by default', function (): void {
+        $repository = new TestRepository();
+
+        // Scout should not be used even if model has Searchable trait
+        // This tests that useScout is false by default
+        $results = $repository->search('doe')->get();
+
+        expect($results)->toHaveCount(1);
+    });
+});

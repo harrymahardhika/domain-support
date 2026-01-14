@@ -20,13 +20,13 @@
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",
-    "phpunit/phpunit": "^11.0",
-    "orchestra/testbench": "^9.14",
-    "pestphp/pest": "^3.0",
-    "laravel/pint": "^1.13",
-    "larastan/larastan": "^2.8",
-    "rector/rector": "^1.2",
-    "driftingly/rector-laravel": "^1.2"
+    "phpunit/phpunit": "^12.5",
+    "orchestra/testbench": "^10.8",
+    "pestphp/pest": "^4.2",
+    "laravel/pint": "^1.18",
+    "larastan/larastan": "^3.8",
+    "rector/rector": "^2.2",
+    "driftingly/rector-laravel": "^2.1"
   },
   "autoload": {
     "psr-4": {

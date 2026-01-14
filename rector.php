@@ -8,7 +8,6 @@ use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use RectorLaravel\Rector\MethodCall\EloquentWhereRelationTypeHintingParameterRector;
 use RectorLaravel\Rector\MethodCall\EloquentWhereTypeHintClosureParameterRector;
 use RectorLaravel\Rector\MethodCall\ResponseHelperCallToJsonResponseRector;
-use RectorLaravel\Rector\MethodCall\ValidationRuleArrayStringValueToArrayRector;
 use RectorLaravel\Set\LaravelSetList;
 
 return RectorConfig::configure()
@@ -40,5 +39,4 @@ return RectorConfig::configure()
         EloquentWhereTypeHintClosureParameterRector::class,
         RemoveDumpDataDeadCodeRector::class,
         ResponseHelperCallToJsonResponseRector::class,
-        ValidationRuleArrayStringValueToArrayRector::class,
     ]);

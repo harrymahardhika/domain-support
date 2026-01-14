@@ -14,6 +14,6 @@ abstract class AbstractConstant
      */
     public static function get(): Collection
     {
-        return collect((new ReflectionClass(static::class))->getConstants());
+        return collect(new ReflectionClass(static::class)->getConstants());
     }
 }

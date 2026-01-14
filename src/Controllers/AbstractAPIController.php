@@ -8,5 +8,6 @@ use Illuminate\Routing\Controller;
 
 abstract class AbstractAPIController extends Controller
 {
+    use HasPermissionMiddleware;
     use SendsJsonResponse;
 }
