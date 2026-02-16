@@ -270,7 +270,7 @@ abstract class AbstractRepository
         if ($this->criteria instanceof CriteriaInterface) {
             foreach ($this->criteria->toArray() as $key => $value) {
                 $key = Str::camel($key);
-                if ($value) {
+                if (null !== $value) {
                     $this->$key($value);
                 }
             }
