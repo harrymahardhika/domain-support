@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HarryM\DomainSupport;
 
+use HarryM\DomainSupport\Console\Commands\CreateDomain;
 use Illuminate\Support\ServiceProvider;
 
 class DomainSupportServiceProvider extends ServiceProvider
@@ -48,5 +49,11 @@ class DomainSupportServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/domain-support.php' => config_path('domain-support.php'),
         ], 'domain-support.config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CreateDomain::class,
+            ]);
+        }
     }
 }
