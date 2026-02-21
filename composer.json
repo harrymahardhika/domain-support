@@ -38,6 +38,11 @@
             "HarryM\\DomainSupport\\Tests\\": "tests"
         }
     },
+    "scripts": {
+        "pint": "vendor/bin/pint",
+        "rector": "vendor/bin/rector process",
+        "test": "vendor/bin/pest"
+    },
     "extra": {
         "laravel": {
             "providers": [
