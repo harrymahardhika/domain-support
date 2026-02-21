@@ -10,6 +10,10 @@ trait EnumTrait
 {
     public static function fromName(string $name): mixed
     {
+        if (! defined('static::'.$name)) {
+            return null;
+        }
+
         return constant('static::'.$name);
     }
 

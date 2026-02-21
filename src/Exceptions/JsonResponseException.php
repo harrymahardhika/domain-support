@@ -12,7 +12,10 @@ class JsonResponseException extends Exception
 {
     public function render(): JsonResponse
     {
-        $code = (array_key_exists($this->getCode(), Response::$statusTexts)) ? $this->getCode() : 500;
+        $code = $this->getCode();
+        if ($code < 100 || $code >= 600 || ! array_key_exists($code, Response::$statusTexts)) {
+            $code = Response::HTTP_INTERNAL_SERVER_ERROR;
+        }
 
         return new JsonResponse(['message' => $this->getMessage()], $code);
     }

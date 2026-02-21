@@ -202,10 +202,12 @@ abstract class AbstractRepository
         if ($ids->isEmpty()) {
             // No results, add impossible where clause
             $this->query->whereRaw('1 = 0');
-        } else {
-            // Filter query by Scout results
-            $this->query->whereIn($model->getKeyName(), $ids->toArray());
+
+            return $this;
         }
+
+        // Filter query by Scout results
+        $this->query->whereIn($model->getKeyName(), $ids->toArray());
 
         return $this;
     }
@@ -219,8 +221,6 @@ abstract class AbstractRepository
             return $this;
         }
 
-        $keyword = sprintf('%%%s%%', $keyword);
-
         /** @var Connection $connection */
         $connection = $this->query->getConnection();
         $databaseDriver = $connection->getDriverName();
@@ -229,18 +229,23 @@ abstract class AbstractRepository
         $searchableColumns = $this->searchableColumns;
 
         if ('pgsql' === $databaseDriver) {
+            $keyword = sprintf('%%%s%%', $keyword);
             $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
                 foreach ($searchableColumns as $column) {
                     $query->orWhere($column, 'ilike', $keyword);
                 }
             });
-        } else {
-            $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
-                foreach ($searchableColumns as $column) {
-                    $query->orWhereRaw(sprintf('LOWER(%s) LIKE ?', $column), [mb_strtolower($keyword)]);
-                }
-            });
+
+            return $this;
         }
+
+        // For other drivers like SQLite/MySQL, use LOWER() for consistent case-insensitivity
+        $keyword = sprintf('%%%s%%', mb_strtolower($keyword));
+        $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
+            foreach ($searchableColumns as $column) {
+                $query->orWhereRaw(sprintf('LOWER(%s) LIKE ?', $column), [$keyword]);
+            }
+        });
 
         return $this;
     }
@@ -270,7 +275,7 @@ abstract class AbstractRepository
         if ($this->criteria instanceof CriteriaInterface) {
             foreach ($this->criteria->toArray() as $key => $value) {
                 $key = Str::camel($key);
-                if (null !== $value) {
+                if (null !== $value && method_exists($this, $key)) {
                     $this->$key($value);
                 }
             }

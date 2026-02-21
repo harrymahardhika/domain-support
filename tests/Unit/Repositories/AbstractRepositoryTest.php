@@ -268,6 +268,18 @@ describe('Criteria integration', function (): void {
         // Verify that criteria was applied
         expect($results)->toHaveCount(1);
     });
+
+    it('ignores invalid criteria keys gracefully', function (): void {
+        $criteria = new TestCriteria([
+            'non_existent_method' => 'some value',
+            'search' => 'doe',
+        ]);
+
+        $repository = new TestRepository($criteria);
+        $results = $repository->get();
+
+        expect($results)->toHaveCount(1);
+    });
 });
 
 describe('Edge cases', function (): void {

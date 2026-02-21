@@ -22,7 +22,7 @@ abstract class AbstractModel extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->perPage = (int) Config::get('domain-support.per_page');
+        $this->perPage = (int) Config::get('domain-support.per_page', 15);
     }
 
     abstract protected static function newFactory(): mixed;
