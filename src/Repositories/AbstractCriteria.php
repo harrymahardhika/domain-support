@@ -13,5 +13,6 @@ abstract class AbstractCriteria extends Data implements CriteriaInterface
         public ?string $sort_column = null,
         public ?string $sort_order = null,
         public ?int $per_page = null,
+        public ?int $limit = null,
     ) {}
 }
