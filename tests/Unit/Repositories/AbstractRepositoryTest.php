@@ -49,7 +49,7 @@ class TestCriteria implements CriteriaInterface
      */
     public function __construct(private readonly array $criteria = []) {}
 
-    #[\Override]
+    #[Override]
     public function toArray(): array
     {
         return $this->criteria;

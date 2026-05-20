@@ -20,7 +20,7 @@ class TestSyncAction extends AbstractAction
         public bool $shouldFail = false
     ) {}
 
-    #[\Override]
+    #[Override]
     public function handle(): string
     {
         throw_if($this->shouldFail, Exception::class, 'Action failed');
@@ -33,7 +33,7 @@ class TestSyncActionWithoutReturn extends AbstractAction
 {
     public bool $executed = false;
 
-    #[\Override]
+    #[Override]
     public function handle(): void
     {
         $this->executed = true;
@@ -48,7 +48,7 @@ class TestAsyncAction extends AbstractAsyncAction
         public bool $shouldFail = false
     ) {}
 
-    #[\Override]
+    #[Override]
     public function handle(): string
     {
         throw_if($this->shouldFail, Exception::class, 'Async action failed');
@@ -61,7 +61,7 @@ class TestAsyncActionWithoutReturn extends AbstractAsyncAction
 {
     public function __construct(public string $data = 'test data') {}
 
-    #[\Override]
+    #[Override]
     public function handle(): void
     {
         // Simulate some work
@@ -120,7 +120,7 @@ describe('AbstractAction', function (): void {
         it('can be dispatched synchronously', function (): void {
             Bus::fake();
 
-            dispatch(new \TestSyncAction('dispatched message'));
+            dispatch(new TestSyncAction('dispatched message'));
 
             Bus::assertDispatched(TestSyncAction::class, fn ($action): bool => 'dispatched message' === $action->message);
         });
@@ -128,13 +128,13 @@ describe('AbstractAction', function (): void {
         it('can be dispatched with multiple parameters', function (): void {
             Bus::fake();
 
-            dispatch(new \TestSyncAction('test', false));
+            dispatch(new TestSyncAction('test', false));
 
             Bus::assertDispatched(TestSyncAction::class, fn ($action): bool => 'test' === $action->message && false === $action->shouldFail);
         });
 
         it('can dispatch and execute immediately', function (): void {
-            $result = dispatch_sync(new \TestSyncAction('sync dispatch'));
+            $result = dispatch_sync(new TestSyncAction('sync dispatch'));
 
             expect($result)->toBe('Handled: sync dispatch');
         });
@@ -205,33 +205,33 @@ describe('AbstractAsyncAction', function (): void {
         });
 
         it('can be dispatched to queue', function (): void {
-            dispatch(new \TestAsyncAction('queued message'));
+            dispatch(new TestAsyncAction('queued message'));
 
             Queue::assertPushed(TestAsyncAction::class, fn ($action): bool => 'queued message' === $action->message);
         });
 
         it('can be dispatched with delay', function (): void {
-            dispatch(new \TestAsyncAction('delayed message'))->delay(now()->addMinutes(5));
+            dispatch(new TestAsyncAction('delayed message'))->delay(now()->addMinutes(5));
 
             Queue::assertPushed(TestAsyncAction::class, fn ($action): bool => 'delayed message' === $action->message);
         });
 
         it('can be dispatched to specific queue', function (): void {
-            dispatch(new \TestAsyncAction('queue specific'))->onQueue('high-priority');
+            dispatch(new TestAsyncAction('queue specific'))->onQueue('high-priority');
 
             Queue::assertPushedOn('high-priority', TestAsyncAction::class);
         });
 
         it('can be dispatched with connection', function (): void {
-            dispatch(new \TestAsyncAction('connection test'))->onConnection('redis');
+            dispatch(new TestAsyncAction('connection test'))->onConnection('redis');
 
             Queue::assertPushed(TestAsyncAction::class, fn ($action): bool => 'redis' === $action->connection);
         });
 
         it('can dispatch multiple jobs', function (): void {
-            dispatch(new \TestAsyncAction('job 1'));
-            dispatch(new \TestAsyncAction('job 2'));
-            dispatch(new \TestAsyncAction('job 3'));
+            dispatch(new TestAsyncAction('job 1'));
+            dispatch(new TestAsyncAction('job 2'));
+            dispatch(new TestAsyncAction('job 3'));
 
             Queue::assertPushed(TestAsyncAction::class, 3);
         });
@@ -274,8 +274,8 @@ describe('Integration scenarios', function (): void {
     it('can chain multiple sync actions', function (): void {
         Bus::fake();
 
-        dispatch(new \TestSyncAction('action 1'));
-        dispatch(new \TestSyncAction('action 2'));
+        dispatch(new TestSyncAction('action 1'));
+        dispatch(new TestSyncAction('action 2'));
 
         Bus::assertDispatched(TestSyncAction::class, 2);
     });
@@ -303,14 +303,14 @@ describe('Integration scenarios', function (): void {
 
 describe('Error handling', function (): void {
     it('handles sync action failures immediately', function (): void {
-        expect(fn () => dispatch_sync(new \TestSyncAction('test', true)))
+        expect(fn () => dispatch_sync(new TestSyncAction('test', true)))
             ->toThrow(Exception::class, 'Action failed');
     });
 
     it('queues async action even if it might fail', function (): void {
         Queue::fake();
 
-        dispatch(new \TestAsyncAction('fail test', true));
+        dispatch(new TestAsyncAction('fail test', true));
 
         Queue::assertPushed(TestAsyncAction::class, fn ($action): bool => true === $action->shouldFail);
     });
