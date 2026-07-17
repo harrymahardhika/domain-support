@@ -19,3 +19,5 @@ yarn-error.log
 /.vscode
 .phpactor.json
 coverage-report
+.claude/settings.local.json
+.claude/memory.json
