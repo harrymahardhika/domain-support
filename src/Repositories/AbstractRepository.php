@@ -17,6 +17,8 @@ abstract class AbstractRepository
 
     public const string SORT_ORDER_DESC = 'desc';
 
+    public const int SCOUT_SEARCH_RESULT_LIMIT = 10000;
+
     protected string $model;
 
     /** @var Builder<Model> */
@@ -194,7 +196,7 @@ abstract class AbstractRepository
         $model = new $this->model;
 
         /** @phpstan-ignore staticMethod.notFound */
-        $scoutBuilder = $model::search($keyword);
+        $scoutBuilder = $model::search($keyword)->take(self::SCOUT_SEARCH_RESULT_LIMIT);
 
         // Get IDs from Scout
         $ids = $scoutBuilder->keys();

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
@@ -39,6 +40,39 @@ class TestRepository extends AbstractRepository
     protected ?array $searchableColumns = ['name', 'email'];
 
     protected ?array $with = ['relation'];
+}
+
+// Fake Scout builder used to spy on the limit applied before ->keys() is called
+class ScoutBuilderSpy
+{
+    public static ?int $capturedLimit = null;
+
+    public function take(int $limit): static
+    {
+        self::$capturedLimit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * @return SupportCollection<int,int>
+     */
+    public function keys(): SupportCollection
+    {
+        return collect([1, 2, 3]);
+    }
+}
+
+// Fake model exposing a static search() method shaped like Laravel Scout's,
+// without depending on the laravel/scout package being installed.
+class ScoutSearchTestModel extends Model
+{
+    protected $table = 'test_models';
+
+    public static function search(string $keyword): ScoutBuilderSpy
+    {
+        return new ScoutBuilderSpy($keyword);
+    }
 }
 
 // Test Criteria implementation
@@ -216,7 +250,7 @@ describe('Limit functionality', function (): void {
         expect($results)->toHaveCount(2);
     });
 
-    it('limit works with search', function (): void {
+    test('limit works with search', function (): void {
         // Add more test data
         TestModel::create(['name' => 'John Smith', 'email' => 'johnsmith@example.com']);
 
@@ -322,14 +356,14 @@ describe('Edge cases', function (): void {
 });
 
 describe('Return types', function (): void {
-    it('get method returns Collection', function (): void {
+    test('get method returns Collection', function (): void {
         $repository = new TestRepository();
         $results = $repository->get();
 
         expect($results)->toBeInstanceOf(Collection::class);
     });
 
-    it('paginate method returns LengthAwarePaginator', function (): void {
+    test('paginate method returns LengthAwarePaginator', function (): void {
         $repository = new TestRepository();
         $results = $repository->perPage(2)->paginate();
 
@@ -337,16 +371,18 @@ describe('Return types', function (): void {
     });
 });
 
-describe('New features', function (): void {
-    it('limit method maintains fluent interface', function (): void {
+describe('Limit method fluency', function (): void {
+    test('limit method maintains fluent interface', function (): void {
         $repository = new TestRepository();
 
         $result = $repository->limit(2);
 
         expect($result)->toBeInstanceOf(TestRepository::class);
     });
+});
 
-    it('sortOrder validates and normalizes input', function (): void {
+describe('Sort order normalization', function (): void {
+    test('sortOrder validates and normalizes input', function (): void {
         $repository = new TestRepository();
 
         $repository->sortOrder('ASC');
@@ -367,7 +403,9 @@ describe('New features', function (): void {
         $results3 = $repository3->get();
         expect($results3)->toHaveCount(3);
     });
+});
 
+describe('Blank search keyword handling', function (): void {
     it('handles empty string search gracefully', function (): void {
         $repository = new TestRepository();
 
@@ -383,8 +421,10 @@ describe('New features', function (): void {
 
         expect($results)->toHaveCount(3);
     });
+});
 
-    it('reset method creates fresh query', function (): void {
+describe('Reset functionality', function (): void {
+    test('reset method creates fresh query', function (): void {
         $repository = new TestRepository();
 
         // Apply some filters
@@ -397,8 +437,10 @@ describe('New features', function (): void {
         $allResults = $repository->get();
         expect($allResults)->toHaveCount(3);
     });
+});
 
-    it('withScout method can enable scout', function (): void {
+describe('Scout toggling', function (): void {
+    test('withScout method can enable scout', function (): void {
         $repository = new TestRepository();
 
         $result = $repository->withScout(true);
@@ -406,7 +448,7 @@ describe('New features', function (): void {
         expect($result)->toBeInstanceOf(TestRepository::class);
     });
 
-    it('withScout method can disable scout', function (): void {
+    test('withScout method can disable scout', function (): void {
         $repository = new TestRepository();
 
         $result = $repository->withScout(false);
@@ -422,5 +464,23 @@ describe('New features', function (): void {
         $results = $repository->search('doe')->get();
 
         expect($results)->toHaveCount(1);
+    });
+});
+
+describe('Scout search limit', function (): void {
+    it('applies a limit above the Meilisearch default before fetching keys', function (): void {
+        ScoutBuilderSpy::$capturedLimit = null;
+
+        $repository = new class extends AbstractRepository
+        {
+            protected string $model = ScoutSearchTestModel::class;
+        };
+
+        $reflection = new ReflectionMethod($repository, 'searchWithScout');
+        $reflection->invoke($repository, 'doe');
+
+        expect(ScoutBuilderSpy::$capturedLimit)
+            ->toBe(AbstractRepository::SCOUT_SEARCH_RESULT_LIMIT)
+            ->toBeGreaterThan(20);
     });
 });
