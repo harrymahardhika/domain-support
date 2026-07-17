@@ -69,6 +69,20 @@ The project uses `rector/rector` for automated refactoring. The configuration is
 composer rector
 ```
 
+### Releasing
+
+This package has no `version` field in `composer.json` — Composer and Packagist resolve the installed version from git tags, so cutting a release means creating a new tag. `scripts/bump-version.sh` automates this: it reads the latest `MAJOR.MINOR.PATCH` tag, bumps the requested part, and creates an annotated tag with that version.
+
+```bash
+composer release              # bump patch (default) and create a local tag
+composer release minor        # bump minor
+composer release major        # bump major
+composer release -- -m "message"   # use a custom tag message (defaults to the latest commit subject)
+composer release -- --push    # also push the current branch and tag to origin
+```
+
+The script refuses to run on a dirty working tree and will not overwrite an existing tag. Without `--push`, the tag is created locally only — push it yourself with `git push origin <branch> --follow-tags` when ready.
+
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
