@@ -34,6 +34,15 @@ abstract class AbstractRepository
 
     protected bool $useScout = false;
 
+    protected bool $preserveScoutOrder = false;
+
+    protected bool $sortExplicitlySet = false;
+
+    protected ?string $scoutOrderClause = null;
+
+    /** @var array<int,int|string> */
+    protected array $scoutOrderBindings = [];
+
     /** @var array<string>|null */
     protected ?array $sortableColumns = [];
 
@@ -73,6 +82,7 @@ abstract class AbstractRepository
     {
         if ($this->sortableColumns && in_array($column, $this->sortableColumns, true)) {
             $this->sortColumn = $column;
+            $this->sortExplicitlySet = true;
         }
 
         return $this;
@@ -87,6 +97,7 @@ abstract class AbstractRepository
 
         if (in_array($normalizedOrder, [self::SORT_ORDER_ASC, self::SORT_ORDER_DESC], true)) {
             $this->sortOrder = $normalizedOrder;
+            $this->sortExplicitlySet = true;
         }
 
         return $this;
@@ -163,6 +174,10 @@ abstract class AbstractRepository
         $this->limit = null;
         $this->perPage = null;
         $this->useScout = false;
+        $this->preserveScoutOrder = false;
+        $this->sortExplicitlySet = false;
+        $this->scoutOrderClause = null;
+        $this->scoutOrderBindings = [];
 
         $this->makeQuery();
 
@@ -198,10 +213,11 @@ abstract class AbstractRepository
         /** @phpstan-ignore staticMethod.notFound */
         $scoutBuilder = $model::search($keyword)->take(self::SCOUT_SEARCH_RESULT_LIMIT);
 
-        // Get IDs from Scout
-        $ids = $scoutBuilder->keys();
+        // Get IDs from Scout, already ranked by relevance/score
+        /** @var array<int,int|string> $ids */
+        $ids = $scoutBuilder->keys()->toArray();
 
-        if ($ids->isEmpty()) {
+        if ([] === $ids) {
             // No results, add impossible where clause
             $this->query->whereRaw('1 = 0');
 
@@ -209,7 +225,15 @@ abstract class AbstractRepository
         }
 
         // Filter query by Scout results
-        $this->query->whereIn($model->getKeyName(), $ids->toArray());
+        $keyName = $model->getKeyName();
+        $this->query->whereIn($keyName, $ids);
+
+        // Preserve Meilisearch's relevance ordering instead of falling back
+        // to the default ORDER BY; applied later in orderBy() so it doesn't
+        // get stacked alongside (rather than replaced by) the default sort.
+        $this->scoutOrderClause = $this->buildScoutOrderClause($keyName, $ids);
+        $this->scoutOrderBindings = $ids;
+        $this->preserveScoutOrder = true;
 
         return $this;
     }
@@ -257,9 +281,35 @@ abstract class AbstractRepository
      */
     protected function orderBy(): static
     {
+        // Respect Meilisearch's relevance ordering unless the caller
+        // explicitly asked for a specific sort column/order.
+        if ($this->preserveScoutOrder && ! $this->sortExplicitlySet) {
+            if (null !== $this->scoutOrderClause) {
+                $this->query->orderByRaw($this->scoutOrderClause, $this->scoutOrderBindings);
+            }
+
+            return $this;
+        }
+
         $this->query->orderBy($this->sortColumn, $this->sortOrder);
 
         return $this;
+    }
+
+    /**
+     * Build a portable CASE expression that ranks rows by their position in
+     * the Scout results, so the database preserves the search engine's order.
+     *
+     * @param array<int,int|string> $ids
+     */
+    private function buildScoutOrderClause(string $keyName, array $ids): string
+    {
+        $cases = implode(' ', array_map(
+            static fn (int $position): string => sprintf('WHEN %s = ? THEN %d', $keyName, $position),
+            array_keys($ids),
+        ));
+
+        return sprintf('CASE %s ELSE %d END', $cases, count($ids));
     }
 
     /**

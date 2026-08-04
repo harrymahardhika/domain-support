@@ -47,6 +47,9 @@ class ScoutBuilderSpy
 {
     public static ?int $capturedLimit = null;
 
+    /** @var array<int,int> */
+    public static array $resultKeys = [1, 2, 3];
+
     public function take(int $limit): static
     {
         self::$capturedLimit = $limit;
@@ -59,7 +62,7 @@ class ScoutBuilderSpy
      */
     public function keys(): SupportCollection
     {
-        return collect([1, 2, 3]);
+        return collect(self::$resultKeys);
     }
 }
 
@@ -470,6 +473,7 @@ describe('Scout toggling', function (): void {
 describe('Scout search limit', function (): void {
     it('applies a limit above the Meilisearch default before fetching keys', function (): void {
         ScoutBuilderSpy::$capturedLimit = null;
+        ScoutBuilderSpy::$resultKeys = [1, 2, 3];
 
         $repository = new class extends AbstractRepository
         {
@@ -482,5 +486,60 @@ describe('Scout search limit', function (): void {
         expect(ScoutBuilderSpy::$capturedLimit)
             ->toBe(AbstractRepository::SCOUT_SEARCH_RESULT_LIMIT)
             ->toBeGreaterThan(20);
+    });
+});
+
+describe('Scout relevance ordering', function (): void {
+    afterEach(function (): void {
+        ScoutBuilderSpy::$resultKeys = [1, 2, 3];
+    });
+
+    it('preserves Meilisearch ranking instead of the default sort', function (): void {
+        // Ids 1=John Doe, 2=Jane Smith, 3=Bob Johnson (created in that order).
+        // Rank Bob first, then John, then Jane - not the default created_at desc order.
+        ScoutBuilderSpy::$resultKeys = [3, 1, 2];
+
+        $repository = new class extends AbstractRepository
+        {
+            protected string $model = ScoutSearchTestModel::class;
+        };
+
+        $reflection = new ReflectionMethod($repository, 'searchWithScout');
+        $reflection->invoke($repository, 'doe');
+
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository->get();
+
+        expect($results->pluck('name')->all())->toBe([
+            'Bob Johnson',
+            'John Doe',
+            'Jane Smith',
+        ]);
+    });
+
+    it('lets an explicit sort column override the relevance ordering', function (): void {
+        ScoutBuilderSpy::$resultKeys = [3, 1, 2];
+
+        $repository = new class extends AbstractRepository
+        {
+            protected string $model = ScoutSearchTestModel::class;
+
+            protected ?array $sortableColumns = ['name'];
+        };
+
+        $reflection = new ReflectionMethod($repository, 'searchWithScout');
+        $reflection->invoke($repository, 'doe');
+
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository
+            ->sortColumn('name')
+            ->sortOrder(AbstractRepository::SORT_ORDER_ASC)
+            ->get();
+
+        expect($results->pluck('name')->all())->toBe([
+            'Bob Johnson',
+            'Jane Smith',
+            'John Doe',
+        ]);
     });
 });
