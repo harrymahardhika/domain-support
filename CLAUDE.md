@@ -16,7 +16,7 @@ composer install                                        # install dependencies
 ./vendor/bin/pest tests/Unit/Actions/ActionTest.php       # run a single test file
 ./vendor/bin/pest --filter "test name"                    # run a specific test by name
 ./vendor/bin/pest --coverage                              # run tests with coverage
-./vendor/bin/phpstan analyse --memory-limit=1G            # static analysis (level 8, via Larastan)
+./vendor/bin/phpstan analyse --memory-limit=1G            # static analysis (level 9, via Larastan)
 ./vendor/bin/pint                                         # auto-format code (PSR-12 + Laravel preset)
 ./vendor/bin/rector process                                # apply automated refactoring rules
 ```
@@ -38,12 +38,20 @@ CI (`.github/workflows/test.yml`) runs `vendor/bin/pest` against PHP 8.4 with a 
 - **`Controllers/AbstractAPIController`** (uses `SendsJsonResponse` trait for standardized JSON responses) and **`Controllers/AbstractWebController`**.
 - **`Exceptions/AbstractException`** — base for domain exceptions, defaults to HTTP 400.
 - **`Events/AbstractEvent`**, **`Constants/AbstractConstant`**, **`Enums/EnumTrait`** — supporting utilities.
-- **`Console/Commands/CreateDomain`** (`domain:create-domain {domain}`) — scaffolds a domain's directory skeleton (`Actions`, `Controllers`, `DTO`, `Enums`, `Exceptions`, `Models`, `Repositories`, `Requests`) under `app/Domains/{domain}` in the consuming application.
-- **`DomainSupportServiceProvider`** — merges `config/domain-support.php`, registers the `domain-support` singleton/facade, and registers the console command.
+- **`Console/Commands/CreateDomain`** (`domain:create-domain {domain}`) — scaffolds a domain's directory skeleton (`Actions`, `Constants`, `Controllers`, `DTO`, `Enums`, `Events`, `Exceptions`, `Models`, `Repositories`, `Requests`) under `app/Domains/{domain}` in the consuming application.
+- **`Console/Commands/Make*`** (`MakeAction`, `MakeRepository`, `MakeCriteria`, `MakeModel`, `MakeController`, `MakeException`, `MakeEvent`, `MakeConstant`, `MakeEnum`) — one generator per abstract class, each rendering a `stubs/*.stub` file into `app/Domains/{domain}/{Type}/{Name}.php` with the namespace and class name substituted. Shared logic (path building, the `--force`/already-exists check, stub resolution) lives in the `Console\Commands\Concerns\GeneratesDomainFile` trait; stub content is looked up in an app-published `stubs/domain-support/` override before falling back to the package's own `stubs/`. `MakeCrud` chains model/repository/criteria/controller/action for a single resource; `ListDomains` (`domain:list`) reports existing domains and their contents. All are plain `Illuminate\Console\Command` classes, not Laravel's `GeneratorCommand`.
+- **`DomainSupportServiceProvider`** — merges `config/domain-support.php`, registers the `domain-support` singleton/facade, registers all console commands, and publishes both the config (`domain-support.config` tag) and the stubs (`domain-support.stubs` tag).
+
+### Laravel Boost integration (`resources/boost/`)
+
+- `resources/boost/guidelines/core.blade.php` — auto-discovered by Laravel Boost's `ThirdPartyPackage::discover()` (no composer.json config needed); loaded upfront for any consuming app that runs `boost:install`/`boost:update --discover`. Keep it in sync when the directory convention, generator commands, or repository/criteria wiring change.
+- `resources/boost/skills/domain-scaffolding/SKILL.md` — on-demand skill walking through the `domain:*` commands in more depth; update it alongside new generators.
 
 ### Testing pattern
 
 Tests live in `tests/Unit/` (no `tests/Feature/` yet despite AGENTS.md mentioning it). Since the package only ships abstract classes, tests extend them inline with concrete anonymous/local implementations to exercise behavior (see `tests/Unit/Actions/ActionTest.php`, `tests/Unit/Repositories/AbstractRepositoryTest.php`). Uses Pest's `describe()`/`it()` syntax with Orchestra Testbench (`tests/TestCase.php`) to bootstrap a Laravel app context.
+
+Console commands (`tests/Unit/Console/Commands/`) are tested by pointing the app at a temp directory — `beforeEach` calls `$this->app->setBasePath(sys_get_temp_dir().'/...')` and `afterEach` deletes it — then driving the command through `Artisan::call()` and asserting on the files it writes, rather than instantiating the command class directly.
 
 ## Code Style
 

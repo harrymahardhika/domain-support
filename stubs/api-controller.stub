@@ -1,0 +1,11 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Controllers\AbstractAPIController;
+
+class {{ class }} extends AbstractAPIController
+{
+}

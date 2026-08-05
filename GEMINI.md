@@ -39,6 +39,26 @@ php artisan vendor:publish --provider="HarryM\DomainSupport\DomainSupportService
 
 This will create a `config/domain-support.php` file in the application's config directory.
 
+### Console Commands
+
+`php artisan domain:create-domain {domain}` scaffolds a domain's directory skeleton under `app/Domains/{domain}`. A matching family of generator commands then creates individual classes inside it, each extending the corresponding abstract class above:
+
+```bash
+php artisan domain:make-model Blog Post
+php artisan domain:make-repository Blog PostRepository       # --model= to override the guessed model FQCN
+php artisan domain:make-criteria Blog PostCriteria
+php artisan domain:make-controller Blog PostController       # --web for AbstractWebController
+php artisan domain:make-action Blog PublishPost               # --async for AbstractAsyncAction
+php artisan domain:make-exception Blog PostNotFound            # --code= for the default HTTP status
+php artisan domain:make-event Blog PostPublished
+php artisan domain:make-constant Blog PostStatus
+php artisan domain:make-enum Blog PostStatus
+php artisan domain:make-crud Blog Post                          # runs the model/repository/criteria/controller/action generators together
+php artisan domain:list                                          # summarizes existing domains and their contents
+```
+
+All generators accept `--force` to overwrite an existing file. They render stubs from the package's `stubs/` directory, which an application can override by publishing them with the `domain-support.stubs` tag.
+
 ### Testing
 
 The project uses Pest and PHPUnit for testing. The tests are located in the `tests` directory. To run the tests, use the following command:

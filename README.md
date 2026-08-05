@@ -35,6 +35,46 @@ php artisan vendor:publish --provider="HarryM\DomainSupport\DomainSupportService
 
 This will create a `config/domain-support.php` file in the application's config directory.
 
+## Console Commands
+
+Scaffold a domain's directory skeleton:
+
+```bash
+php artisan domain:create-domain Blog
+```
+
+Generate individual classes into that skeleton, each extending the matching abstract base class:
+
+```bash
+php artisan domain:make-model Blog Post
+php artisan domain:make-repository Blog PostRepository            # --model= to override the guessed model FQCN
+php artisan domain:make-criteria Blog PostCriteria
+php artisan domain:make-controller Blog PostController            # --web for AbstractWebController
+php artisan domain:make-action Blog PublishPost                   # --async for AbstractAsyncAction
+php artisan domain:make-exception Blog PostNotFound                # --code= to set the default HTTP status (400)
+php artisan domain:make-event Blog PostPublished
+php artisan domain:make-constant Blog PostStatus
+php artisan domain:make-enum Blog PostStatus
+```
+
+All of the above accept `--force` to overwrite an existing file. Stubs can be customized per-application by publishing them:
+
+```bash
+php artisan vendor:publish --provider="HarryM\DomainSupport\DomainSupportServiceProvider" --tag="domain-support.stubs"
+```
+
+`domain:make-crud {domain} {name}` runs the model/repository/criteria/controller/action generators together for a single resource. `domain:list` prints the existing domains under `app/Domains` and a summary of what each one contains.
+
+## Laravel Boost Integration
+
+This package ships [Laravel Boost](https://laravel.com/docs/boost) AI guidelines (`resources/boost/guidelines/core.blade.php`) and a skill (`resources/boost/skills/domain-scaffolding/SKILL.md`), so downstream AI agents automatically learn its conventions and generator commands. In a consuming application with Boost installed, run:
+
+```bash
+php artisan boost:install       # or: php artisan boost:update --discover
+```
+
+and select `harrym/domain-support` when prompted to pull in its guidelines and skill.
+
 ## Testing and Development
 
 ### Testing
@@ -55,10 +95,10 @@ composer pint
 
 ### Static Analysis
 
-The project uses `larastan/larastan` for static analysis. To run the analysis, use:
+The project uses `larastan/larastan` for static analysis (level 9). To run the analysis, use:
 
 ```bash
-composer analyse
+./vendor/bin/phpstan analyse --memory-limit=1G
 ```
 
 ### Automated Refactoring

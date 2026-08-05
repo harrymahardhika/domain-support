@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Exceptions\AbstractException;
+use Throwable;
+
+class {{ class }} extends AbstractException
+{
+    public function __construct(string $message = '', int $code = {{ code }}, ?Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $previous);
+    }
+}

@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Models\AbstractModel;
+
+class {{ class }} extends AbstractModel
+{
+    protected static function newFactory(): mixed
+    {
+        // TODO: return a factory for this model, e.g. {{ class }}Factory::new(), or remove this override if unused.
+        return null;
+    }
+}

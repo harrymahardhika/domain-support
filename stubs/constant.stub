@@ -1,0 +1,12 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Constants\AbstractConstant;
+
+class {{ class }} extends AbstractConstant
+{
+    public const string EXAMPLE = 'example';
+}

@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Actions\AbstractAsyncAction;
+
+class {{ class }} extends AbstractAsyncAction
+{
+    public function handle(): void
+    {
+        //
+    }
+}

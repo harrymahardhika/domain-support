@@ -6,7 +6,7 @@
 - `./vendor/bin/pest tests/Unit/Actions/ActionTest.php` — run single test file
 - `./vendor/bin/pest --filter "test name"` — run specific test by name
 - `./vendor/bin/pest --coverage` — run tests with coverage
-- `./vendor/bin/phpstan analyse --memory-limit=1G` — static analysis (level 8)
+- `./vendor/bin/phpstan analyse --memory-limit=1G` — static analysis (level 9)
 - `./vendor/bin/pint` — auto-format code (PSR-12 + Laravel preset)
 - `./vendor/bin/rector process` — apply refactoring rules
 
@@ -26,3 +26,9 @@
 - Use Pest's `describe()` and `it()` syntax with descriptive names
 - Prefer constructor injection and data objects over facades for deterministic tests
 - Test concrete implementations by extending abstract classes inline
+- Test console commands by pointing the app at a temp directory (`$this->app->setBasePath(...)` in `beforeEach`, deleted in `afterEach`) and driving them via `Artisan::call()`, asserting on the files written — see `tests/Unit/Console/Commands/`
+
+## Console Command Generators
+- `Console/Commands/Make*` classes render a `stubs/*.stub` file into `app/Domains/{domain}/{Type}/{Name}.php`; shared logic lives in `Console/Commands/Concerns/GeneratesDomainFile`
+- When adding a new generator: add its stub under `stubs/`, register the command in `DomainSupportServiceProvider`, add coverage in `tests/Unit/Console/Commands/`, and update `resources/boost/guidelines/core.blade.php` / `resources/boost/skills/domain-scaffolding/SKILL.md` so downstream AI agents using Laravel Boost stay in sync
+- Stub content is resolved from an app-published `stubs/domain-support/` override first, then the package's own `stubs/` — keep that lookup in sync if the stub directory moves

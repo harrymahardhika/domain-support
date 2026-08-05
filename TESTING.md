@@ -53,3 +53,19 @@ php artisan vendor:publish --provider="HarryM\DomainSupport\DomainSupportService
 ```
 
 This will publish the `domain-support.php` config file to the `config` directory of your Laravel application.
+
+### 6. Exercise the Console Commands (Optional)
+
+This is a good way to sanity-check a change to a generator command before publishing a new tag:
+
+```bash
+php artisan domain:create-domain Blog
+php artisan domain:make-crud Blog Post
+php artisan domain:list
+```
+
+This should scaffold `app/Domains/Blog/{Actions,Constants,Controllers,DTO,Enums,Events,Exceptions,Models,Repositories,Requests}` and then populate `Models/Post.php`, `Repositories/PostRepository.php`, `Repositories/PostCriteria.php`, `Controllers/PostController.php`, and `Actions/PostAction.php`. To test overriding a stub, publish and edit one, then rerun the matching `domain:make-*` command with `--force`:
+
+```bash
+php artisan vendor:publish --provider="HarryM\DomainSupport\DomainSupportServiceProvider" --tag="domain-support.stubs"
+```

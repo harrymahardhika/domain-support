@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Repositories\AbstractRepository;
+use {{ model }};
+
+class {{ class }} extends AbstractRepository
+{
+    protected string $model = {{ modelClass }}::class;
+
+    /** @var array<string> */
+    protected array $sortableColumns = [];
+
+    /** @var array<string> */
+    protected array $searchableColumns = [];
+
+    /** @var array<string> */
+    protected array $with = [];
+}

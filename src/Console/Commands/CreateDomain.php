@@ -25,9 +25,11 @@ class CreateDomain extends Command
 
         $directories = [
             'Actions',
+            'Constants',
             'Controllers',
             'DTO',
             'Enums',
+            'Events',
             'Exceptions',
             'Models',
             'Repositories',

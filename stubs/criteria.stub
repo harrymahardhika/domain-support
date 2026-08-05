@@ -1,0 +1,11 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use HarryM\DomainSupport\Repositories\AbstractCriteria;
+
+class {{ class }} extends AbstractCriteria
+{
+}

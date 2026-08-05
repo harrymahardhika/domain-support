@@ -10,6 +10,7 @@ trait SendsJsonResponse
 {
     public function sendJsonResponse(mixed $content, int $code = 200): JsonResponse
     {
-        return new JsonResponse($content, $code);
+        return new JsonResponse($content, $code)
+            ->setEncodingOptions(JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_UNESCAPED_UNICODE);
     }
 }

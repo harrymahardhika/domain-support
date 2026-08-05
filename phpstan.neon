@@ -3,4 +3,10 @@ includes:
 parameters:
     paths:
         - src
-    level: 8
+    level: 9
+    ignoreErrors:
+        -
+            identifier: trait.unused
+            path: src/Enums/EnumTrait.php
+            message: '#^Trait HarryM\\DomainSupport\\Enums\\EnumTrait is used zero times and is not analysed\.$#'
+            reportUnmatched: false
