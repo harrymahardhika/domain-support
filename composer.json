@@ -20,9 +20,9 @@
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest",
-        "phpunit/phpunit": "^12.5",
-        "orchestra/testbench": "^10.8",
-        "pestphp/pest": "^4.2",
+        "phpunit/phpunit": "^13.2",
+        "orchestra/testbench": "^11.1",
+        "pestphp/pest": "^5.0",
         "laravel/pint": "^1.18",
         "larastan/larastan": "^3.8",
         "rector/rector": "^2.2",

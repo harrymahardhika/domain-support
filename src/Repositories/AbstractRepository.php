@@ -269,7 +269,10 @@ abstract class AbstractRepository
         $keyword = sprintf('%%%s%%', mb_strtolower($keyword));
         $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
             foreach ($searchableColumns as $column) {
-                $query->orWhereRaw(sprintf('LOWER(%s) LIKE ?', $column), [$keyword]);
+                $sql = sprintf('LOWER(%s) LIKE ?', $column);
+
+                /** @var literal-string $sql */
+                $query->orWhereRaw($sql, [$keyword]);
             }
         });
 
@@ -285,13 +288,17 @@ abstract class AbstractRepository
         // explicitly asked for a specific sort column/order.
         if ($this->preserveScoutOrder && ! $this->sortExplicitlySet) {
             if (null !== $this->scoutOrderClause) {
-                $this->query->orderByRaw($this->scoutOrderClause, $this->scoutOrderBindings);
+                /** @var literal-string $scoutOrderClause */
+                $scoutOrderClause = $this->scoutOrderClause;
+                $this->query->orderByRaw($scoutOrderClause, $this->scoutOrderBindings);
             }
 
             return $this;
         }
 
-        $this->query->orderBy($this->sortColumn, $this->sortOrder);
+        /** @var 'asc'|'desc' $sortOrder */
+        $sortOrder = $this->sortOrder;
+        $this->query->orderBy($this->sortColumn, $sortOrder);
 
         return $this;
     }
