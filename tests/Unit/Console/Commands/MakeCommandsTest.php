@@ -10,6 +10,7 @@ beforeEach(function (): void {
     $this->basePath = sys_get_temp_dir().'/domain-support-tests-'.uniqid();
     $this->files = new Filesystem;
     $this->files->makeDirectory($this->basePath, 0755, true);
+
     $this->app->setBasePath($this->basePath);
 });
 
