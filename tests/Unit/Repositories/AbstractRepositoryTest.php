@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use HarryM\DomainSupport\Exceptions\UnmappedCriteriaException;
 use HarryM\DomainSupport\Repositories\AbstractRepository;
 use HarryM\DomainSupport\Repositories\CriteriaInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection as SupportCollection;
@@ -19,7 +21,7 @@ class TestModel extends Model
 {
     protected $table = 'test_models';
 
-    protected $fillable = ['name', 'email', 'status'];
+    protected $fillable = ['name', 'email', 'status', 'customer_id'];
 
     /**
      * @return HasOne<TestModel, $this>
@@ -28,6 +30,22 @@ class TestModel extends Model
     {
         return $this->hasOne(TestModel::class, 'id', 'id');
     }
+
+    /**
+     * @return BelongsTo<TestCustomer, $this>
+     */
+    public function customer()
+    {
+        return $this->belongsTo(TestCustomer::class, 'customer_id');
+    }
+}
+
+// Related model used to test searchableRelations()
+class TestCustomer extends Model
+{
+    protected $table = 'test_customers';
+
+    protected $fillable = ['name'];
 }
 
 // Test Repository implementation
@@ -40,6 +58,30 @@ class TestRepository extends AbstractRepository
     protected ?array $searchableColumns = ['name', 'email'];
 
     protected ?array $with = ['relation'];
+}
+
+// Test Repository implementation searching a related model's columns
+class TestRepositoryWithSearchableRelations extends AbstractRepository
+{
+    protected string $model = TestModel::class;
+
+    protected ?array $searchableColumns = ['name'];
+
+    protected array $searchableRelations = [
+        'customer' => ['name'],
+    ];
+}
+
+// Test Repository implementation searching only a related model's columns
+class TestRepositoryWithOnlySearchableRelations extends AbstractRepository
+{
+    protected string $model = TestModel::class;
+
+    protected ?array $searchableColumns = [];
+
+    protected array $searchableRelations = [
+        'customer' => ['name'],
+    ];
 }
 
 // Fake Scout builder used to spy on the limit applied before ->keys() is called
@@ -100,6 +142,13 @@ beforeEach(function (): void {
         $table->string('name');
         $table->string('email');
         $table->string('status')->default('active');
+        $table->unsignedBigInteger('customer_id')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('test_customers', function ($table): void {
+        $table->id();
+        $table->string('name');
         $table->timestamps();
     });
 
@@ -171,6 +220,64 @@ describe('Search functionality', function (): void {
         $results = $repository->search('')->get();
 
         expect($results)->toHaveCount(3);
+    });
+});
+
+describe('Searchable relations', function (): void {
+    it('matches a row via a related model column', function (): void {
+        $customer = TestCustomer::create(['name' => 'Acme Corp']);
+        TestModel::where('name', 'Bob Johnson')->update(['customer_id' => $customer->id]);
+
+        $repository = new TestRepositoryWithSearchableRelations();
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository->search('acme')->get();
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()->name)->toBe('Bob Johnson');
+    });
+
+    it('matches either own columns or related columns (OR semantics)', function (): void {
+        $customer = TestCustomer::create(['name' => 'Acme Corp']);
+        TestModel::where('name', 'Bob Johnson')->update(['customer_id' => $customer->id]);
+
+        $repository = new TestRepositoryWithSearchableRelations();
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository->search('john')->get();
+
+        // Matches "John Doe" via own column and "Bob Johnson" via surname substring
+        expect($results->pluck('name')->all())
+            ->toEqualCanonicalizing(['John Doe', 'Bob Johnson']);
+    });
+
+    it('does not match unrelated rows', function (): void {
+        $customer = TestCustomer::create(['name' => 'Acme Corp']);
+        TestModel::where('name', 'Bob Johnson')->update(['customer_id' => $customer->id]);
+
+        $repository = new TestRepositoryWithSearchableRelations();
+        $results = $repository->search('nonexistent')->get();
+
+        expect($results)->toHaveCount(0);
+    });
+
+    it('can search purely via a related model when own searchableColumns is empty', function (): void {
+        $customer = TestCustomer::create(['name' => 'Acme Corp']);
+        TestModel::where('name', 'Bob Johnson')->update(['customer_id' => $customer->id]);
+
+        $repository = new TestRepositoryWithOnlySearchableRelations();
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository->search('acme')->get();
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()->name)->toBe('Bob Johnson');
+    });
+
+    it('leaves existing repositories without searchableRelations unaffected', function (): void {
+        $repository = new TestRepository();
+        /** @var Collection<int,TestModel> $results */
+        $results = $repository->search('doe')->get();
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()->name)->toBe('John Doe');
     });
 });
 
@@ -266,6 +373,36 @@ describe('Limit functionality', function (): void {
     });
 });
 
+describe('Limit applied to pagination', function (): void {
+    it('caps paginated results when limit is smaller than perPage', function (): void {
+        $repository = new TestRepository();
+
+        $results = $repository->perPage(10)->limit(2)->paginate();
+
+        expect($results)->toBeInstanceOf(LengthAwarePaginator::class);
+        expect($results->count())->toBe(2);
+        expect($results->perPage())->toBe(2);
+    });
+
+    it('does not widen perPage when limit is larger than perPage', function (): void {
+        $repository = new TestRepository();
+
+        $results = $repository->perPage(1)->limit(10)->paginate();
+
+        expect($results->count())->toBe(1);
+        expect($results->perPage())->toBe(1);
+    });
+
+    it('uses limit as perPage when perPage is not set', function (): void {
+        $repository = new TestRepository();
+
+        $results = $repository->limit(2)->paginate();
+
+        expect($results->count())->toBe(2);
+        expect($results->perPage())->toBe(2);
+    });
+});
+
 describe('Method chaining', function (): void {
     it('allows method chaining for fluent interface', function (): void {
         $repository = new TestRepository();
@@ -306,16 +443,32 @@ describe('Criteria integration', function (): void {
         expect($results)->toHaveCount(1);
     });
 
-    it('ignores invalid criteria keys gracefully', function (): void {
+    it('throws when a criteria property has no matching repository method in local/testing', function (): void {
         $criteria = new TestCriteria([
             'non_existent_method' => 'some value',
             'search' => 'doe',
         ]);
 
-        $repository = new TestRepository($criteria);
-        $results = $repository->get();
+        expect(fn () => new TestRepository($criteria))
+            ->toThrow(UnmappedCriteriaException::class);
+    });
 
-        expect($results)->toHaveCount(1);
+    it('silently ignores unmapped criteria properties outside local/testing', function (): void {
+        app()->detectEnvironment(fn () => 'production');
+
+        try {
+            $criteria = new TestCriteria([
+                'non_existent_method' => 'some value',
+                'search' => 'doe',
+            ]);
+
+            $repository = new TestRepository($criteria);
+            $results = $repository->get();
+
+            expect($results)->toHaveCount(1);
+        } finally {
+            app()->detectEnvironment(fn () => 'testing');
+        }
     });
 });
 

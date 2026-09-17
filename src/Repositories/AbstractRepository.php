@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HarryM\DomainSupport\Repositories;
 
+use HarryM\DomainSupport\Exceptions\UnmappedCriteriaException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,6 +49,9 @@ abstract class AbstractRepository
 
     /** @var array<string>|null */
     protected ?array $searchableColumns = [];
+
+    /** @var array<string, array<string>> */
+    protected array $searchableRelations = [];
 
     /** @var array<string>|null */
     protected ?array $with = [];
@@ -161,7 +165,13 @@ abstract class AbstractRepository
 
         $this->orderBy();
 
-        return $this->query->paginate($this->perPage)->appends($appends);
+        $perPage = $this->perPage;
+
+        if ($this->limit && (null === $perPage || $this->limit < $perPage)) {
+            $perPage = $this->limit;
+        }
+
+        return $this->query->paginate($perPage)->appends($appends);
     }
 
     /**
@@ -239,11 +249,27 @@ abstract class AbstractRepository
     }
 
     /**
+     * Extension point for searching related models' columns alongside
+     * $searchableColumns, without overriding searchWithDatabase() entirely.
+     * Keyed by relation name to the list of columns on that relation to search.
+     *
+     * @return array<string, array<string>>
+     */
+    protected function searchableRelations(): array
+    {
+        return $this->searchableRelations;
+    }
+
+    /**
      * Search using database queries with LIKE/ILIKE.
      */
     protected function searchWithDatabase(string $keyword): static
     {
-        if (null === $this->searchableColumns || [] === $this->searchableColumns) {
+        /** @var array<string> $searchableColumns */
+        $searchableColumns = $this->searchableColumns ?? [];
+        $searchableRelations = $this->searchableRelations();
+
+        if ([] === $searchableColumns && [] === $searchableRelations) {
             return $this;
         }
 
@@ -251,28 +277,17 @@ abstract class AbstractRepository
         $connection = $this->query->getConnection();
         $databaseDriver = $connection->getDriverName();
 
-        /** @var array<string> $searchableColumns */
-        $searchableColumns = $this->searchableColumns;
+        $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $searchableRelations, $keyword, $databaseDriver): void {
+            if ([] !== $searchableColumns) {
+                $this->applyColumnSearch($query, $searchableColumns, $databaseDriver, $keyword);
+            }
 
-        if ('pgsql' === $databaseDriver) {
-            $keyword = sprintf('%%%s%%', $keyword);
-            $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
-                foreach ($searchableColumns as $column) {
-                    $query->orWhere($column, 'ilike', $keyword);
-                }
-            });
-
-            return $this;
-        }
-
-        // For other drivers like SQLite/MySQL, use LOWER() for consistent case-insensitivity
-        $keyword = sprintf('%%%s%%', mb_strtolower($keyword));
-        $this->query = $this->query->where(function (Builder $query) use ($searchableColumns, $keyword): void {
-            foreach ($searchableColumns as $column) {
-                $sql = sprintf('LOWER(%s) LIKE ?', $column);
-
-                /** @var literal-string $sql */
-                $query->orWhereRaw($sql, [$keyword]);
+            foreach ($searchableRelations as $relation => $columns) {
+                $query->orWhereHas($relation, function (Builder $relationQuery) use ($columns, $databaseDriver, $keyword): void {
+                    $relationQuery->where(function (Builder $relationQuery) use ($columns, $databaseDriver, $keyword): void {
+                        $this->applyColumnSearch($relationQuery, $columns, $databaseDriver, $keyword);
+                    });
+                });
             }
         });
 
@@ -301,6 +316,36 @@ abstract class AbstractRepository
         $this->query->orderBy($this->sortColumn, $sortOrder);
 
         return $this;
+    }
+
+    /**
+     * Apply an OR'd LIKE/ILIKE condition across the given columns on the
+     * given query builder, branching on database driver for case-insensitivity.
+     *
+     * @param Builder<Model> $query
+     * @param array<string>  $columns
+     */
+    private function applyColumnSearch(Builder $query, array $columns, string $databaseDriver, string $keyword): void
+    {
+        if ('pgsql' === $databaseDriver) {
+            $likeKeyword = sprintf('%%%s%%', $keyword);
+
+            foreach ($columns as $column) {
+                $query->orWhere($column, 'ilike', $likeKeyword);
+            }
+
+            return;
+        }
+
+        // For other drivers like SQLite/MySQL, use LOWER() for consistent case-insensitivity
+        $likeKeyword = sprintf('%%%s%%', mb_strtolower($keyword));
+
+        foreach ($columns as $column) {
+            $sql = sprintf('LOWER(%s) LIKE ?', $column);
+
+            /** @var literal-string $sql */
+            $query->orWhereRaw($sql, [$likeKeyword]);
+        }
     }
 
     /**
@@ -334,9 +379,20 @@ abstract class AbstractRepository
         if ($this->criteria instanceof CriteriaInterface) {
             foreach ($this->criteria->toArray() as $key => $value) {
                 $key = Str::camel($key);
-                if (null !== $value && method_exists($this, $key)) {
-                    $this->$key($value);
+
+                if (null === $value) {
+                    continue;
                 }
+
+                if (! method_exists($this, $key)) {
+                    if (function_exists('app') && app()->environment('local', 'testing')) {
+                        throw new UnmappedCriteriaException($key, static::class);
+                    }
+
+                    continue;
+                }
+
+                $this->$key($value);
             }
         }
     }
