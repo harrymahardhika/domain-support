@@ -28,6 +28,23 @@ trait EnumTrait
 
     public function translated(): string
     {
-        return __($this->value);
+        $namespace = static::translationNamespace();
+
+        $key = null === $namespace ? $this->value : "{$namespace}.{$this->value}";
+
+        return __($key);
+    }
+
+    /**
+     * The translation namespace prefixed to translated() lookups. Override
+     * on the enum to use a namespace other than the package-wide default
+     * from config('domain-support.translation_namespace').
+     */
+    protected static function translationNamespace(): ?string
+    {
+        /** @var string|null $default */
+        $default = function_exists('config') ? config('domain-support.translation_namespace') : null;
+
+        return $default;
     }
 }
